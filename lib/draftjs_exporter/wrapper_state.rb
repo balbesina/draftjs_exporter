@@ -9,7 +9,7 @@ module DraftjsExporter
 
     def element_for(block)
       type = block.fetch(:type, 'unstyled')
-      document.create_element(block_options(type)).tap do |e|
+      document.create_element(block_options(type), block_styles(block)).tap do |e|
         parent_for(type).add_child(e)
       end
     end
@@ -69,6 +69,11 @@ module DraftjsExporter
         reset_wrapper.add_child(new_element)
         set_wrapper(new_element, options)
       end
+    end
+
+    def block_styles(block)
+      styles = block.fetch(:data, {})
+      {style: styles.sum('') { |key, value| "#{key}: #{value};" }} if styles.any?
     end
   end
 end

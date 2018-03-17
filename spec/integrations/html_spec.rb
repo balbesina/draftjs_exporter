@@ -321,5 +321,32 @@ RSpec.describe DraftjsExporter::HTML do
         is_expected.to eq(expected_output)
       end
     end
+
+    context 'when data styles' do
+      let(:input) do
+        {
+          entityMap: {},
+          blocks: [
+            {
+              key: 'ckf8d',
+              text: 'centered',
+              type: 'header-one',
+              depth: 0,
+              inlineStyleRanges:[],
+              entityRanges: [],
+              data: {"text-align" => 'center'}
+            }
+          ]
+        }
+      end
+
+      it 'should correctly process' do
+        expected_output = <<-OUTPUT.strip
+          <h1 style="text-align: center;">centered</h1>
+        OUTPUT
+
+        is_expected.to eq(expected_output)
+      end
+    end
   end
 end
