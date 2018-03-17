@@ -24,9 +24,13 @@ RSpec.describe DraftjsExporter::HTML do
   end
 
   describe '#call' do
+    let(:input) { nil }
+    let(:options) { {} }
+    subject { mapper.call(input, options) }
+
     context 'with different blocks' do
-      it 'decodes the content_state to html' do
-        input = {
+      let(:input) do
+        {
           entityMap: {},
           blocks: [
             {
@@ -47,18 +51,20 @@ RSpec.describe DraftjsExporter::HTML do
             }
           ]
         }
+      end
 
+      it 'decodes the content_state to html' do
         expected_output = <<-OUTPUT.strip
 <h1>Header</h1><div>some paragraph text</div>
         OUTPUT
 
-        expect(mapper.call(input)).to eq(expected_output)
+        is_expected.to eq(expected_output)
       end
     end
 
     context 'with inline styles' do
-      it 'decodes the content_state to html' do
-        input = {
+      let(:input) do
+        {
           entityMap: {},
           blocks: [
             {
@@ -77,19 +83,21 @@ RSpec.describe DraftjsExporter::HTML do
             }
           ]
         }
+      end
 
+      it 'decodes the content_state to html' do
         expected_output = <<-OUTPUT.strip
 <div>
 <span style="font-style: italic;">some</span> paragraph text</div>
         OUTPUT
 
-        expect(mapper.call(input)).to eq(expected_output)
+        is_expected.to eq(expected_output)
       end
     end
 
     context 'with entities' do
-      it 'decodes the content_state to html' do
-        input = {
+      let(:input) do
+        {
           entityMap: {
             '0' => {
               type: 'LINK',
@@ -116,17 +124,19 @@ RSpec.describe DraftjsExporter::HTML do
             }
           ]
         }
+      end
 
+      it 'decodes the content_state to html' do
         expected_output = <<-OUTPUT.strip
 <div>some <a href="http://example.com" class="foobar-baz">paragraph</a> text</div>
         OUTPUT
 
-        expect(mapper.call(input)).to eq(expected_output)
+        is_expected.to eq(expected_output)
       end
 
       context 'with deeply_symbolized entities' do
-        it 'decodes the content_state to html' do
-          input = {
+        let(:input) do
+          {
             entityMap: {
               :'0' => {
                 type: 'LINK',
@@ -153,64 +163,70 @@ RSpec.describe DraftjsExporter::HTML do
               }
             ]
           }
+        end
 
+        it 'decodes the content_state to html' do
           expected_output = <<-OUTPUT.strip
 <div>some <a href="http://example.com" class="foobar-baz">paragraph</a> text</div>
           OUTPUT
 
-          expect(mapper.call(input)).to eq(expected_output)
+          is_expected.to eq(expected_output)
         end
       end
 
 
-      it 'throws an error if entities cross over' do
-        input = {
-          entityMap: {
-            '0' => {
-              type: 'LINK',
-              mutability: 'MUTABLE',
-              data: {
-                url: 'http://foo.example.com'
+      context 'when entities cross over' do
+        let(:input) do
+          {
+            entityMap: {
+              '0' => {
+                type: 'LINK',
+                mutability: 'MUTABLE',
+                data: {
+                  url: 'http://foo.example.com'
+                }
+              },
+              '1' => {
+                type: 'LINK',
+                mutability: 'MUTABLE',
+                data: {
+                  url: 'http://bar.example.com'
+                }
               }
             },
-            '1' => {
-              type: 'LINK',
-              mutability: 'MUTABLE',
-              data: {
-                url: 'http://bar.example.com'
+            blocks: [
+              {
+                key: 'dem5p',
+                text: 'some paragraph text',
+                type: 'unstyled',
+                depth: 0,
+                inlineStyleRanges: [],
+                entityRanges: [
+                  {
+                    offset: 5,
+                    length: 9,
+                    key: 0
+                  },
+                  {
+                    offset: 2,
+                    length: 9,
+                    key: 1
+                  }
+                ]
               }
-            }
-          },
-          blocks: [
-            {
-              key: 'dem5p',
-              text: 'some paragraph text',
-              type: 'unstyled',
-              depth: 0,
-              inlineStyleRanges: [],
-              entityRanges: [
-                {
-                  offset: 5,
-                  length: 9,
-                  key: 0
-                },
-                {
-                  offset: 2,
-                  length: 9,
-                  key: 1
-                }
-              ]
-            }
-          ]
-        }
+            ]
+          }
+        end
 
-        expect { mapper.call(input) }.to raise_error(DraftjsExporter::InvalidEntity)
+        it 'throws an error' do
+          expect { subject }.to raise_error(DraftjsExporter::InvalidEntity)
+        end
       end
     end
 
     context 'with wrapped blocks' do
-      it 'decodes the content_state to html' do
-        input = {
+      let(:input) do
+        {
           entityMap: {},
           blocks: [
             {
@@ -231,18 +247,20 @@ RSpec.describe DraftjsExporter::HTML do
             }
           ]
         }
+      end
 
+      it 'decodes the content_state to html' do
         expected_output = <<-OUTPUT.strip
 <ul class="public-DraftStyleDefault-ul">\n<li>item1</li>\n<li>item2</li>\n</ul>
         OUTPUT
 
-        expect(mapper.call(input)).to eq(expected_output)
+        is_expected.to eq(expected_output)
       end
     end
 
     context 'with UTF-8 encoding' do
-      it 'leaves non-latin letters as-is' do
-        input = {
+      let(:input) do
+        {
           entityMap: {},
           blocks: [
             {
@@ -265,12 +283,42 @@ RSpec.describe DraftjsExporter::HTML do
             }
           ]
         }
+      end
+      let(:options) { {encoding: 'UTF-8'} }
 
+      it 'leaves non-latin letters as-is' do
         expected_output = <<-OUTPUT.strip
           <ul class=\"public-DraftStyleDefault-ul\">\n<li>Russian: Привет, мир!</li>\n<li>Japanese: 曖昧さ回避</li>\n</ul>
         OUTPUT
 
-        expect(mapper.call(input, encoding: 'UTF-8')).to eq(expected_output)
+        is_expected.to eq(expected_output)
+      end
+    end
+
+    context 'when inline color' do
+      let(:input) do
+        {
+          entityMap: {},
+          blocks: [
+            {
+              key: 'ckf8d',
+              text: 'Red Text',
+              type: 'header-one',
+              depth: 0,
+              inlineStyleRanges:[{offset:0,length:3,style:"color-rgb(184,49,47)"}],
+              entityRanges: [],
+              data: {}
+            }
+          ]
+        }
+      end
+
+      it 'should correctly process' do
+        expected_output = <<-OUTPUT.strip
+          <h1>\n<span style="color: rgb(184,49,47);">Red</span> Text</h1>
+        OUTPUT
+
+        is_expected.to eq(expected_output)
       end
     end
   end
