@@ -18,7 +18,9 @@ RSpec.describe DraftjsExporter::HTML do
         'unstyled' => { element: 'div' }
       },
       style_map: {
-        'ITALIC' => { fontStyle: 'italic' }
+        :ITALIC.to_s => {fontStyle: 'italic'},
+        :UNDERLINE.to_s => {textDecoration: 'underline'},
+        :STRIKETHROUGH.to_s => {textDecoration: 'line-through'}
       }
     )
   end
@@ -343,6 +345,36 @@ RSpec.describe DraftjsExporter::HTML do
       it 'should correctly process' do
         expected_output = <<-OUTPUT.strip
           <h1 style="text-align: center;">centered</h1>
+        OUTPUT
+
+        is_expected.to eq(expected_output)
+      end
+    end
+
+    context 'when different styles with same htmlStyle' do
+      let(:input) do
+        {
+          entityMap: {},
+          blocks: [
+            {
+              key: 'ckf8d',
+              text: 'StrikeAndUnderline',
+              type: 'header-one',
+              depth: 0,
+              inlineStyleRanges:[
+                {offset:0, length:18, style:'UNDERLINE'},
+                {offset:0, length:18, style:'STRIKETHROUGH'},
+              ],
+              entityRanges: [],
+              data: {}
+            }
+          ]
+        }
+      end
+
+      it 'should correctly process' do
+        expected_output = <<-OUTPUT.strip
+          <h1>\n<span style="text-decoration: underline line-through;">StrikeAndUnderline</span></h1>
         OUTPUT
 
         is_expected.to eq(expected_output)

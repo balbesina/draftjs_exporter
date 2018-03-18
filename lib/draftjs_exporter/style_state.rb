@@ -36,11 +36,26 @@ module DraftjsExporter
     end
 
     def styles_css
-      styles.map { |style|
-        inline_style(style) || style_map.fetch(style)
-      }.inject({}, :merge).map { |key, value|
+      hash_styles = styles.map { |style| inline_style(style) || style_map.fetch(style) }
+
+      merge_styles(hash_styles).sum('') do |key, value|
         "#{hyphenize(key)}: #{value};"
-      }.join
+      end
+    end
+
+    def merge_styles(hash_styles)
+      hash_styles.inject({}) do |result, style_hash|
+        style_hash.each do |style, value|
+          key = style.to_s
+          if result.key?(key)
+            result[key] = "#{result[key]} #{value}"
+          else
+            result[key] = value
+          end
+        end
+
+        result
+      end
     end
 
     def inline_style(style)
