@@ -9,7 +9,7 @@ module DraftjsExporter
 
     def element_for(block)
       type = block.fetch(:type, 'unstyled')
-      document.create_element(block_options(type), block_styles(block)).tap do |e|
+      document.create_element(*block_options(type, block)).tap do |e|
         parent_for(type).add_child(e)
       end
     end
@@ -60,8 +60,14 @@ module DraftjsExporter
       [element_name, options]
     end
 
-    def block_options(type)
-      block_map.fetch(type).fetch(:element)
+    def block_options(type, block)
+      options = block_map.fetch(type)
+      element = options.fetch(:element)
+      styles = options.fetch(:styles, {}).merge(block.fetch(:data, {}))
+      args = {}
+      args[:style] = styles.sum('') { |key, value| "#{key}: #{value};" } if styles.any?
+
+      [element, args]
     end
 
     def create_wrapper(options)
@@ -69,11 +75,6 @@ module DraftjsExporter
         reset_wrapper.add_child(new_element)
         set_wrapper(new_element, options)
       end
-    end
-
-    def block_styles(block)
-      styles = block.fetch(:data, {})
-      {style: styles.sum('') { |key, value| "#{key}: #{value};" }} if styles.any?
     end
   end
 end

@@ -10,6 +10,8 @@ module DraftjsExporter
       fontfamily: 'fontFamily'
     }.freeze
 
+    ALLOW_STYLE_CONCAT = %w[textDecoration]
+
     attr_reader :styles, :style_map
 
     def initialize(style_map)
@@ -19,10 +21,10 @@ module DraftjsExporter
 
     def apply(command)
       case command.name
-      when :start_inline_style
-        styles.push(command.data)
-      when :stop_inline_style
-        styles.delete(command.data)
+        when :start_inline_style
+          styles.push(command.data)
+        when :stop_inline_style
+          styles.delete(command.data)
       end
     end
 
@@ -47,7 +49,7 @@ module DraftjsExporter
       hash_styles.inject({}) do |result, style_hash|
         style_hash.each do |style, value|
           key = style.to_s
-          if result.key?(key)
+          if result.key?(key) && ALLOW_STYLE_CONCAT.include?(key)
             result[key] = "#{result[key]} #{value}"
           else
             result[key] = value
@@ -63,7 +65,10 @@ module DraftjsExporter
       key, value = style.split('-')
       raise ArgumentError if value.is_a?(Array)
 
-      {INLINE_MAP.fetch(key.to_sym) => value.gsub(/[^0-9a-z(),]/i, '')}
+      _key = key.to_sym
+      _value = value.gsub(/[^0-9a-z(),]/i, '')
+      _value += 'px' if _key == :fontsize
+      {INLINE_MAP.fetch(_key) => _value}
     end
 
     def hyphenize(string)
