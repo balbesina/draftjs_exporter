@@ -10,13 +10,16 @@ documents at HTML. This gem is designed to take the raw `ContentState`
 (output of [`convertToRaw`](https://facebook.github.io/draft-js/docs/api-reference-data-conversion.html#converttoraw))
 from Draft.js and convert it to HTML using Ruby.
 
+Supports output for [react-draft-wysiwyg](https://github.com/jpuri/react-draft-wysiwyg).
+
 ## Usage
 
 ```ruby
 # Create configuration for entities and styles
 config = {
   entity_decorators: {
-    'LINK' => DraftjsExporter::Entities::Link.new(className: 'link')
+    'LINK' => DraftjsExporter::Entities::Link.new(className: 'link'),
+    'IMAGE' => DraftjsExporter::Entities::Image.new
   },
   block_map: {
     'header-one' => { element: 'h1' },
@@ -24,7 +27,8 @@ config = {
       element: 'li',
       wrapper: ['ul', { className: 'public-DraftStyleDefault-ul' }]
     },
-    'unstyled' => { element: 'div' }
+    'unstyled' => { element: 'div' },
+    'atomic' => { element: 'div' },
   },
   style_map: {
     'ITALIC' => { fontStyle: 'italic' }
@@ -42,6 +46,16 @@ exporter.call({
       mutability: 'MUTABLE',
       data: {
         url: 'http://example.com'
+      }
+    },
+    '1' => {
+      type: 'IMAGE',
+      mutability: 'MUTABLE',
+      data: {
+        'src' => 'https://www.ruby-lang.org/images/header-ruby-logo.png',
+        'width' => '62px',
+        'height' => 'auto',
+        'alignment' => 'right' 
       }
     }
   },
@@ -73,10 +87,18 @@ exporter.call({
           key: 0
         }
       ]
+    },
+    {
+      key: '5s7g9',
+      type: 'atomic',
+      text: ' ',
+      depth: 0,
+      inlineStyleRanges: [],
+      entityRanges: [{offset: 0, length: 1, key: 1}]
     }
   ]
 })
-# => "<h1>Header</h1><div>\n<span style=\"font-style: italic;\">some</span> <a href=\"http://example.com\" class=\"link\">paragraph</a> text</div>"
+# => "<h1>Header</h1><div>\n<span style=\"font-style: italic;\">some</span> <a href=\"http://example.com\" class=\"link\">paragraph</a> text</div><div style=\"text-align: right;\">\n<img src=\"https://www.ruby-lang.org/images/header-ruby-logo.png\" width=\"62px\" height=\"auto\"></div>"
 ```
 
 ## Tests
