@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 require 'spec_helper'
-require 'draftjs_exporter/html'
-require 'draftjs_exporter/entities/link'
+require 'draftjs_exporter'
 
 RSpec.describe DraftjsExporter::HTML do
   subject(:mapper) do
     described_class.new(
       entity_decorators: {
-        'LINK' => DraftjsExporter::Entities::Link.new(className: 'foobar-baz')
+        :LINK.to_s => DraftjsExporter::Entities::Link.new(className: 'foobar-baz'),
+        :IMAGE.to_s => DraftjsExporter::Entities::Image.new
       },
       block_map: {
         'header-one' => { element: 'h1' },
@@ -15,7 +15,8 @@ RSpec.describe DraftjsExporter::HTML do
           element: 'li',
           wrapper: ['ul', { className: 'public-DraftStyleDefault-ul' }]
         },
-        'unstyled' => { element: 'div' }
+        :unstyled.to_s => { element: 'div' },
+        :atomic.to_s => { element: 'div' }
       },
       style_map: {
         :ITALIC.to_s => {fontStyle: 'italic'},
@@ -375,6 +376,41 @@ RSpec.describe DraftjsExporter::HTML do
       it 'should correctly process' do
         expected_output = <<-OUTPUT.strip
           <h1>\n<span style="text-decoration: underline line-through;">StrikeAndUnderline</span></h1>
+        OUTPUT
+
+        is_expected.to eq(expected_output)
+      end
+    end
+
+    context 'when image' do
+      let(:input) do
+        {
+          entityMap: {'1':
+            {type: 'IMAGE', mutability: "MUTABLE", data:
+              {
+                :src.to_s => "http://s13.ru/wp-content/upl/2018/03/teatr_7studiya_grodno_20180313_gord_tutby_phsl_-9979-411x274.jpg",
+                :height.to_s => "100px",
+                :width.to_s => "auto",
+                :alignment.to_s => "left"
+              }
+          }},
+          blocks: [
+            {
+              key: 'ckf8d',
+              text: '',
+              type: 'atomic',
+              depth: 0,
+              inlineStyleRanges:[],
+              entityRanges: [{offset: 0, length: 1, key: 1}],
+              data: {}
+            }
+          ]
+        }
+      end
+
+      it 'should correctly process' do
+        expected_output = <<-OUTPUT.strip
+          <div style="text-align: left;">\n<img src="http://s13.ru/wp-content/upl/2018/03/teatr_7studiya_grodno_20180313_gord_tutby_phsl_-9979-411x274.jpg" height="100px" width="auto"></div>
         OUTPUT
 
         is_expected.to eq(expected_output)
